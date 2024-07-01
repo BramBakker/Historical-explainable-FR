@@ -8,7 +8,6 @@ The dataset can be shared upon request
 To train the model under various conditions, change out the head of the model in the code. The train file is a tuple of two lists, one of images and one of target classes.<br />
 run: train.py  <path_tosavemodel> <train_file> <br />
 
-
 To train the GAN, use the same train file <br />
 run: train_GAN.py <path_to_save_model> <train_file>
 
@@ -16,8 +15,7 @@ To train with triplet loss, a custom train file of a single list of triplets is 
 run: traintrip.py <path_to_save_model> <train_file>
 
 To generate saliency maps from a particular model where the validation_file consists of a tuple, a list of probe images, and a gallery of target images<br /> 
-run: explanation.py <path_to_model> <validation_file> <br /> 
-. 
+run: explanation.py <path_to_model> <validation_file> <br />
 
 To calculate the DAUC and IAUC of the generated saliency maps<br /> 
 run: eval_explanation.py  <path_to_model> <explanation_files>
