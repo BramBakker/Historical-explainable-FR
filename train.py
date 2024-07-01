@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import seaborn as sns
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+
 # FaceResNet is just resnet with an extra last few layers for a new loss function which could be changed by self.head
 class FaceResNet(nn.Module):
     def __init__(self, num_classes):
@@ -73,21 +75,6 @@ def load_model(pretrained=False):
         model.load_state_dict(model_statedict)
     model.to(device)
     return model
-class TripletDataset(Dataset):
-    def __init__(self, anchor_images, positive_images, negative_images):
-        self.anchor_images = anchor_images
-        self.positive_images = positive_images
-        self.negative_images = negative_images
-        
-    def __len__(self):
-        return len(self.anchor_images)
-    
-    def __getitem__(self, idx):
-        anchor_img = self.anchor_images[idx]
-        positive_img = self.positive_images[idx]
-        negative_img = self.negative_images[idx]
-        
-        return anchor_img, positive_img, negative_img
 
 def to_input(pil_rgb_image):
     np_img = np.array(pil_rgb_image)
@@ -165,31 +152,27 @@ if __name__ == "__main__":
     uni=torch.unique(torch.tensor(t_tens, dtype=torch.long))
     num_classes=uni.size(dim=0)
 
-    # Oversample the low number classes in the training set
+    # Define the datasets
     dataset = TensorDataset(X_train_tensor, y_train_tensor)
-
-    def check_data(data):
-        if torch.isnan(data).any() or torch.isinf(data).any():
-            raise ValueError("Data contains NaN or infinity values")
-
-
     dataset_test = TensorDataset(X_test_tensor, y_test_tensor)
     class_counts = torch.bincount(t_tens)
     few_shot_classes=[]
     for c in range(len(class_counts)):
         if class_counts[c]<10:
             few_shot_classes.append(c)
-    class_weights = 1. / class_counts.float()
-    sample_weights = class_weights[i_encoded]
-    sampler = WeightedRandomSampler(weights=class_weights, num_samples=len(sample_weights), replacement=True)
-    train_loader = DataLoader(fulldat, batch_size=batch_size)
-    test_laoder=DataLoader(dataset_test, batch_size=batch_size)
+    train_loader = DataLoader(dataset, batch_size=batch_size)
+    test_laoder = DataLoader(dataset_test, batch_size=batch_size)
     num_batches = len(train_loader)
     total_samples = batch_size*num_batches
     test_length=len(test_laoder)*batch_size
-    #initialize model
+
+    
+    #initialize model, either the basic Resnet, or the model from net.py
     #modelo = FaceResNet(num_classes).to(device)
-    modelo =load_model(pretrained=True).to(device)
+    modelo = load_model(pretrained=True).to(device)
+
+
+    # Choose the right head with the right hyperparameter
     #modelo.head = Normal(embedding_size=512, classnum=num_classes).to(device)
     #modelo.head = CosFace(embedding_size=512, classnum=num_classes, m=0.6,s=64).to(device)
     #modelo.head = ArcFace(embedding_size=512, classnum=num_classes, s=64., m=0.5).to(device)
@@ -200,17 +183,21 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss(reduction='none')
     optimizer_ft = optim.Adam(modelo.parameters(), lr=0.0004, weight_decay=1e-4)
     latent_dim=100
-    
+
+    # Select the option whether or not to use the GAN
     gen=True
-
-
-    clust_im=True
+    
     if gen==True:
         generator=torch.load(gen_path)
         with open(gen_v_path, "rb") as fp:
             V = pickle.load(fp)
 
-    for epoch in range(5):  # loop over the dataset multiple times
+    # Select the option whether or not to save embeddings for clustering, to visualize the feature-space
+    clust_im=True
+
+    
+    # loop over the dataset multiple times
+    for epoch in range(5):  
         individual_losses = []
         cor=0
         running_loss = 0.0
@@ -222,9 +209,10 @@ if __name__ == "__main__":
             i+=1
             rgb_batch, labels = rgb_batch.to(device), labels.to(device)
             optimizer_ft.zero_grad()
+            # If we use the GAN we generate additional samples for few-shot classes
             if gen==True:
-                # Generate additional samples for few-shot classes
-                num_generated_samples_per_class = 8 # Number of samples to generate per few-shot class
+
+                num_generated_samples_per_class = 8 
                 generated_feats = []
                 generated_labels = []
                 generated_norms = []
@@ -242,18 +230,23 @@ if __name__ == "__main__":
                 generated_feats = torch.cat(generated_feats)
                 generated_labels = torch.cat(generated_labels)
                 generated_norms=torch.cat(generated_norms)
-
+                
             norms,embeddings=modelo.get_embed(rgb_batch.float())
+            
+            # If we use the GAN we add generated embeddings
             if gen==True:
                 embeddings = torch.cat((embeddings, generated_feats))
                 labels = torch.cat((labels, generated_labels))
                 norms=torch.cat((norms,generated_norms))
+
+            # If we want to display feature space, we want to clone and detach the embeddings
             if clust_im==True and epoch>1:
                 for integ in range(embeddings.size(dim=0)):
                     e=embeddings[integ]
                     la=labels[integ]
                     gen_embeds.append(e.clone().cpu().detach().numpy())
                     gen_labels.append(la.clone().cpu().detach().numpy())
+            
             outputs = modelo.only_feats(embeddings,norms, labels)
             predicted=torch.argmax(outputs ,dim=1)
             cor += (predicted == labels).sum().item() 
@@ -299,15 +292,11 @@ if __name__ == "__main__":
         label_to_color = {label: palette[i] for i, label in enumerate(unique_labels)}
         pca_2=PCA(2)
         tot_feats=np.array(gen_embeds)
-        #Transform the data
+        # Transform the data
         df = pca_2.fit_transform(tot_feats)
         for lab in unique_labels:
             indices = np.where(gen_labels == lab)
             plt.scatter(df[indices, 0], df[indices, 1], color=label_to_color[lab], label=lab, s=10, alpha=0.6)
-        #for p in range(len(df)):
-            #point=df[p]
-            #lab=gen_labels[p]
-           #plt.scatter(point[0],point[1],label=lab)
         plt.show()
     torch.save(modelo, model_dir)
 
