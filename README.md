@@ -5,7 +5,7 @@ This codebase is used for experiments of various FR loss functions and data augm
 The dataset can be shared upon request
 
 # How to use
-To train the model under various conditions, change out the head  of the model in the code, 
+To train the model under various conditions, change out the head  of the model in the code\\
 and run the following command: train.py  <path_tosavemodel> <train_file> 
 The train file is a tuple of two lists, one of images and one of target classes.
 
