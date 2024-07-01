@@ -65,11 +65,11 @@ class TripletLoss(torch.nn.Module):
         self.margin = margin
 
     def forward(self, anchor, positive, negative):
-        # Compute Euclidean distances between anchor, positive, and negative embeddings
+        # Euclidean distances between anchor, positive, and negative embeddings
         distance_positive = F.pairwise_distance(anchor, positive)
         distance_negative = F.pairwise_distance(anchor, negative)
 
-        # Compute triplet loss
+        # triplet loss
         loss = torch.relu(distance_positive - distance_negative + self.margin)
         
         return torch.mean(loss)
@@ -77,19 +77,22 @@ class TripletLoss(torch.nn.Module):
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 if __name__ == "__main__":
+
+    # Get the data
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_dir = sys.argv[1]
     dataset_file = sys.argv[2]
-    
+
     dataset_path = os.path.join(script_dir, 'datasets', dataset_file)
     model_path = os.path.join(script_dir, 'models', model_dir)
 
-    #open dataset
     with open(dataset_path, "rb") as fp:
         tripface_d = pickle.load(fp)
     fp.close()
-
+    
     tripface_dat=tripface_d[0]
+
+    # Get three lists of images
     trip_anch_list_uns=tripface_dat[0]
     trip_pos_list_uns=tripface_dat[1]
     trip_neg_list_uns=tripface_dat[2]
@@ -112,6 +115,8 @@ if __name__ == "__main__":
     new_im_anch=[]
     new_im_pos=[]
     new_im_neg=[]
+
+    # Get them in the right format for the model
     for i in range(len(trip_anch_list)):
         im_anch=Image.fromarray(trip_anch_list[i]).convert('RGB')
         im_pos=Image.fromarray(trip_pos_list[i]).convert('RGB')
@@ -124,29 +129,23 @@ if __name__ == "__main__":
         new_im_neg.append(imag_neg)
 
 
-
-
     new_im_anch_tens=torch.stack(new_im_anch)
     new_im_pos_tens=torch.stack(new_im_pos)
     new_im_neg_tens=torch.stack(new_im_neg)
 
+
+
+    
     batch_size=40
     
-
-
-    def check_data(data):
-        if torch.isnan(data).any() or torch.isinf(data).any():
-            raise ValueError("Data contains NaN or infinity values")
 
     trips_dataset = TripletDataset(new_im_anch_tens, new_im_pos_tens, new_im_neg_tens)
     trips_dataloader = DataLoader(trips_dataset, batch_size=batch_size, shuffle=True)
 
-        
-
+    # Load model
     modelo =load_model(pretrained=True).to(device)
     optimizer_ft = optim.Adam(modelo.parameters(), lr=0.00001)
-    print(len(new_im_anch_tens))
-    for epoch in range(1):  # loop over the dataset multiple times
+    for epoch in range(2):
         individual_losses = []
         cor=0
         running_loss = 0.0
@@ -169,7 +168,5 @@ if __name__ == "__main__":
             print(batch_size*i, " / ", len(new_im_anch_tens))
             print(running_loss/i)
         print(running_loss /  len(new_im_anch_tens))
-        # test batches
-        test_cor=0
     torch.save(modelo, f"{sys.argv[1]}")
 
