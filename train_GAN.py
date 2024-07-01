@@ -58,8 +58,6 @@ class FaceResNet(nn.Module):
         logits = self.head(features,norms,labels)
         return logits
 
-# Set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Generator(nn.Module):
@@ -122,6 +120,9 @@ if __name__ == "__main__":
     with open(dataset_file, "rb") as fp:
         trainface_dat = pickle.load(fp)
         fp.close()
+    # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         
     #transform data into the right form for input
     image_list_uns=trainface_dat[0]
