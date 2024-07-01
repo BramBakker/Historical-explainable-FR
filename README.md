@@ -6,19 +6,24 @@ The dataset can be shared upon request
 
 # How to use
 To train the model under various conditions, change out the head  of the model in the code<br />
-and run the following command: train.py  <path_tosavemodel> <train_file> 
+run the following command: train.py  <path_tosavemodel> <train_file> <br />
 The train file is a tuple of two lists, one of images and one of target classes.
 
 To train the GAN, use the same train file and run train_GAN.py <path_to_save_model> <train_file>
 
-To train with triplet loss, a custom train file of a single list of triplets is needed, and run traintrip.py <path_to_save_model> <train_file>
+To train with triplet loss, a custom train file of a single list of triplets is needed<br /> 
+run: traintrip.py <path_to_save_model> <train_file>
 
-To generate saliency maps from a particular model, run: explanation.py <path_to_model> <validation_file> 
+To generate saliency maps from a particular modeld<br /> 
+run: explanation.py <path_to_model> <validation_file> <br /> 
 The validation_file consists of a tuple, a list of probe images, and a gallery of target images. 
 
-To calculate the DAUC and IAUC of the generated saliency maps, run: eval_explanation.py  <path_to_model> <explanation_files>
+To calculate the DAUC and IAUC of the generated saliency maps<br /> 
+run: eval_explanation.py  <path_to_model> <explanation_files>
 
-To visualize a particular saliency map, run: explain_visualize.py <path_to_model> <validation_file> 
+To visualize a particular saliency map<br /> 
+run: explain_visualize.py <path_to_model> <validation_file> 
 
-To evaluate a particular model, run: eval.py <path_to_model> <validation_file> 
+To evaluate a particular model<br /> 
+run: eval.py <path_to_model> <validation_file> 
 
