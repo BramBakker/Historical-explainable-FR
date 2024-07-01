@@ -12,8 +12,7 @@ from eval import get_features
 from skimage.segmentation import mark_boundaries
 import sys
 import os
-#this is for the explanations
-LIME_explainer = lime_image.LimeImageExplainer()
+
 
 class Explainer_model(nn.Module):
     def __init__(self, original_model):
@@ -80,26 +79,29 @@ def generate_mask(processed_gradient, threshold=0.5):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python script_name.py <model_dir> <dataset_file>")
-        sys.exit(1)
 
+    #this is for the explanations
+    LIME_explainer = lime_image.LimeImageExplainer()
     model_dir = sys.argv[1]
     dataset_file = sys.argv[2]
 
-    # Get the directory of the current script
+    # Get the right files
     script_dir = os.path.dirname(os.path.abspath(__file__))
     explan_dir = os.path.join(script_dir, 'explan')
-
-    # Define paths relative to the script's directory
     names_path = os.path.join(script_dir, 'datasets', 'names.pkl')
     model_path = os.path.join(script_dir, 'models', model_dir)
     dataset_path = os.path.join(script_dir, 'datasets', dataset_file)
+
+    # The names_path contains the names of the validation set, so we can look up the pictures for qualitative evaluation
     low_qaulypeople,people = pd.read_pickle(names_path)
+
+    # Generate embeddings and get similarity scores
     features, features_y,modelo,obj=get_features(model_path,dataset_path,orig=False)
     similarity_scores = np.concatenate(features) @ np.concatenate(features_y).T
     im_obj = pd.read_pickle(dataset_path)
 
+
+    # Choose predictions
     indices=[]
     i=0
     for r in similarity_scores:
@@ -112,22 +114,24 @@ if __name__ == "__main__":
     ])
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = Explainer_model(modelo)
-    g_truth=np.linspace(1, len(indices), num=len(indices))
+
+    #Choose whcih image to evaluate
     i=88
 
     im=obj[0][i]
     im_y=obj[1][indices[i]]
 
+    # Get the image and the predicted image
     ima=Image.fromarray(im_obj[0][i]).convert('RGB')
     tar_ima=Image.fromarray(im_obj[1][indices[i]]).convert('RGB')
 
-
+    # Generate LIME explanation and display it
     explanation = LIME_explainer.explain_instance(np.array(ima), classifier_fn, top_labels=1, hide_color=0, num_samples=500)
     temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], positive_only=False, num_features=10, hide_rest=False)
     plt.imshow(mark_boundaries(temp, mask))
     plt.show()
 
-        # Define paths relative to the script's directory
+    # Get the xSSAB explanation and save the image at the right place
     combined_im_path = os.path.join(explan_dir, 'combined_im.png')
     original_im_path = os.path.join(explan_dir, 'original.png')
     target_im_path = os.path.join(explan_dir, 'target.png')
