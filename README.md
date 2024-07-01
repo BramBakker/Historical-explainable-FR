@@ -9,7 +9,8 @@ To train the model under various conditions, change out the head  of the model i
 run the following command: train.py  <path_tosavemodel> <train_file> <br />
 The train file is a tuple of two lists, one of images and one of target classes.
 
-To train the GAN, use the same train file and run train_GAN.py <path_to_save_model> <train_file>
+To train the GAN, use the same train file <br />
+run: train_GAN.py <path_to_save_model> <train_file>
 
 To train with triplet loss, a custom train file of a single list of triplets is needed<br /> 
 run: traintrip.py <path_to_save_model> <train_file>
