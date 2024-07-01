@@ -16,6 +16,8 @@ from sklearn.decomposition import PCA
 import numpy as np
 import os
 import sys
+
+# Define the class of the regular model
 class FaceResNet(nn.Module):
     def __init__(self, num_classes):
         super(FaceResNet, self).__init__()
@@ -27,7 +29,6 @@ class FaceResNet(nn.Module):
         self.dropout = nn.Dropout(p=0.4)
         self.cosine_layer = nn.Linear(512, 1, False)
 
-        #change head for different loss functions
     def forward(self, x, labels):
         
         x = self.model(x)
@@ -59,6 +60,8 @@ class FaceResNet(nn.Module):
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 class Generator(nn.Module):
     def __init__(self, noise_dim, feature_dim, num_classes):
         super(Generator, self).__init__()
@@ -87,6 +90,7 @@ class Generator(nn.Module):
         x = F.normalize(x, p=2, dim=1)
         
         return x
+
 class Discriminator(nn.Module):
     def __init__(self, feature_dim, num_classes):
         super(Discriminator, self).__init__()
@@ -104,6 +108,7 @@ class Discriminator(nn.Module):
         return torch.sigmoid(x)
     
 if __name__ == "__main__":
+    # Get the right data
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_dir = sys.argv[1]
     dataset_file = sys.argv[2]
@@ -117,16 +122,13 @@ if __name__ == "__main__":
     with open(dataset_file, "rb") as fp:
         trainface_dat = pickle.load(fp)
         fp.close()
-    #transform data into the right form and split into train and test data
+        
+    #transform data into the right form for input
     image_list_uns=trainface_dat[0]
     target_list_uns=trainface_dat[1]
-
-
-
     transform = transforms.Compose([
         transforms.PILToTensor()
     ])
-
 
     new_t=[]
     new_im=[]
@@ -166,7 +168,7 @@ if __name__ == "__main__":
     num_epochs=600
     modelo=torch.load(model_path)
 
-    # Calculate class means for all training data
+    # Calculate average variance per class
     class_means = np.zeros((num_classes, 512))
     class_counts = np.zeros((num_classes))
     with torch.no_grad():
@@ -189,15 +191,17 @@ if __name__ == "__main__":
             for feature, label in zip(features, labels):
                 centered_features.append(feature - class_means[label])
 
-    # Compute principal components with PCA
+    # Calculate principal components with PCA
     n_components = 100  # Number of principal components to keep
     pca = PCA(n_components=n_components)
-    pca.fit(np.array(centered_features))  # PCA expects a numpy array, so convert mean_features to numpy array
+    pca.fit(np.array(centered_features)) 
 
-    # Get principal components
+    # Define the projection matrix
     V = pca.components_.T  # Shape: (n_features, n_components)
     V = torch.tensor(V, dtype=torch.float32).to(device)
 
+
+    # Train the GAN
     for epoch in range(num_epochs):
         for rgb_batch, labels in train_loader:
             _,features=modelo.get_embed(rgb_batch.float())
