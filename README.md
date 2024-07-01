@@ -6,7 +6,7 @@ The dataset can be shared upon request
 
 # How to use
 To train the model under various conditions, change out the head of the model in the code. The train file is a tuple of two lists, one of images and one of target classes.<br />
-run the following command: train.py  <path_tosavemodel> <train_file> <br />
+run: train.py  <path_tosavemodel> <train_file> <br />
 
 
 To train the GAN, use the same train file <br />
