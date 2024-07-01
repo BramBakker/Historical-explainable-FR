@@ -9,11 +9,7 @@ from train import FaceResNet
 import sys
 import os
 
-def create_identity_array(N):
-    identity_array = np.zeros((N, N))
-    for i in range(N):
-        identity_array[i, i] = 1
-    return identity_array
+# Function to generate embeddings from two lists of images, a list of probes and a gallery
 def get_features(model_path,image_path,orig):
     obj = pd.read_pickle(image_path)
 
@@ -68,42 +64,27 @@ if __name__ == "__main__":
     model_file = sys.argv[1]
     dataset_file = sys.argv[2]
 
-    # Get the directory of the current script
+    # Get the right files
     script_dir = os.path.dirname(os.path.abspath(__file__))
     explan_dir = os.path.join(script_dir, 'grad_explanations')
-
-    # Define paths relative to the script's directory
     model_path = os.path.join(script_dir, 'models', model_file)
     dataset_path = os.path.join(script_dir, 'datasets', dataset_file)
 
     model_path = model_path
     image_path = dataset_path
+
+    # Get embeddings and calculate cosine similarity
     features, features_y,modelo,obj=get_features(model_path,image_path,orig=False)
     similarity_scores = np.concatenate(features) @ np.concatenate(features_y).T
     pair_found=0
     sure_thing=0
     surepairs=0
     top_5=0
-    #pca = PCA(2)
-    #total_feats=features+features_y
-    #tot_feats=np.squeeze(np.array(total_feats))
-    #Transform the data
-    #df = pca.fit_transform(tot_feats)
-    #i=0
-    #for point in df:
-        #plt.scatter(point[0],point[1],label=i)
-        #i+=1
-        #if i==len(obj[0]):
-           # i=0
-    #plt.show()
     i=0
-    low_qaulypeople,people = pd.read_pickle(r"X:\Downloads\NIOD\datasets\names.pkl")
 
 
-    N = len(similarity_scores[0]) 
-    identity_array = create_identity_array(N)
     decisions=[]
-
+    # Iterate over the probes, and find the maximum, while also checking if any similarity score is over a threshold for an accept
     for r in similarity_scores:
         decision=np.zeros(len(similarity_scores[0]))
         max_index=np.argmax(r)
