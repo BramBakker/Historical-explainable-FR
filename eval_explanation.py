@@ -20,6 +20,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import os
 import sys
 
+# With this we use the predict function for other SOTA models
 def classifier_others(ima):
     predicts=[]
     i=0
@@ -37,6 +38,7 @@ def classifier_others(ima):
             predicts.append(new_similarity_scores[index])
     return torch.tensor(predicts)
 
+# The predicts are just the cosine similarity scores
 def classifier_fn(ima,orig):
     predicts=[]
     
@@ -61,6 +63,8 @@ def to_input(pil_rgb_image):
         return [tensor, 1]
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 HW = 112 * 112
+
+# This is how we blur the image
 def gkern(klen, nsig):
     inp = np.zeros((klen, klen))
     inp[klen//2, klen//2] = 1
@@ -89,6 +93,8 @@ def blur(x):
 def auc(arr):
     return (arr.sum() - arr[0] / 2 - arr[-1] / 2) / (arr.shape[0] - 1)
 
+
+# This class is used to calculate either DAUC or IAUC
 class CausalMetric():
 
     def __init__(self, model, mode, step, substrate_fn):
@@ -122,8 +128,6 @@ class CausalMetric():
             preds=classifier_fn(start,orig=False)
             for j in range(len(predictions)):
                 probs= preds[j]
-
-        
                 scores[i][j] = probs[predictions[j]]
 
             coords = salient_order[:, self.step * i:self.step * (i + 1)]
@@ -168,17 +172,21 @@ if __name__ == "__main__":
     indices=[]
     print(np.array(LIME_expl[1]).shape)
 
+    
+    # Get similarity scores
     features, features_y,modelo,obj=get_features(model_path,dataset_path,orig=False)
     similarity_scores = np.concatenate(features) @ np.concatenate(features_y).T
-
     im_obj = pd.read_pickle(dataset_path)
-    #image_path=  r"X:\Downloads\NIOD\datasets\valface.pkl"
+
+
+    # This code is to get the similarity scores from the other SOTA models
+    #image_path =  dataset_path
     #obj = pd.read_pickle(image_path)
     #features=[]
     #features_y=[]
     #for i in range(len(obj[0])):
-        #im=Image.fromarray(obj[0][i]).convert('RGB')
-        #im_y=Image.fromarray(obj[1][i]).convert('RGB')
+        #im = Image.fromarray(obj[0][i]).convert('RGB')
+        #im_y = Image.fromarray(obj[1][i]).convert('RGB')
         #feature = DeepFace.represent(np.array(im), enforce_detection=False,model_name=models[8])
         #feature_y = DeepFace.represent(np.array(im_y), enforce_detection=False,model_name=models[8])
         #features.append(feature[0]["embedding"])
@@ -193,10 +201,12 @@ if __name__ == "__main__":
     step = 150  # Number of pixels to perturb at each step
     substrate_fn = blur 
 
+
+    # Calculate the DAUC and IAUC for both LIME and xSSAB
     causal_metric = CausalMetric(modelo, 'del', step, substrate_fn)
     causal_metric_ins = CausalMetric(modelo, 'ins', step, substrate_fn)
 
-
+    
     L_ins_scores = causal_metric_ins.evaluate(indices, np.array(im_obj[0]), np.array(LIME_expl))
     mean_scores = L_ins_scores.mean(axis=1)
     print(mean_scores)
