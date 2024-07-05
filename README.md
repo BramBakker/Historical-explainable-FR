@@ -1,5 +1,5 @@
 # Historical-explainable-FR
-This codebase is used for experiments of various FR loss functions and data augmentation methods in the domain of historical data, both head.py and net.py are adopted from Adaface https://github.com/mk-minchul/AdaFace, while gradient_calculator.py originates from https://github.com/marcohuber/xSSAB.
+This codebase is used for experiments of various FR loss functions and data augmentation methods in the domain of historical data, both head.py and net.py are adopted from Adaface https://github.com/mk-minchul/AdaFace, while gradient_calculator.py originates from https://github.com/marcohuber/xSSAB. to calculate other SOTA models the Deepface python framework was used https://pypi.org/project/deepface/
 
 # Data availability
 The dataset can be shared upon request
