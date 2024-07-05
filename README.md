@@ -27,3 +27,6 @@ run: explain_visualize.py <path_to_model> <validation_file>
 To evaluate a particular model<br /> 
 run: eval.py <path_to_model> <validation_file> 
 
+To evaluate a pre-trained model from the Deepface framewrok<br /> 
+run: eval_others.py <validation_file> 
+
